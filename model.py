@@ -1,5 +1,7 @@
 import logging as log
 import datetime
+import random
+import time
 
 
 class Resource(object):
@@ -18,7 +20,7 @@ class MissException(Exception):
   """
   def __init__(self):
     super(MissException, self).__init__()
-    log.info('%s happened', self)
+    log.info('MissException happened')
 
 class Container(list):
 
@@ -70,10 +72,59 @@ class InfiniteContainer(Container):
     return self.item_class('item-%d' % len(self))
 
 
-if __name__ == '__main__':
-  log.basicConfig(level=log.INFO)
 
+class AbsoluteJITStrategySimulation(object):
+
+  def __init__(self):
+    self.remote_supply = InfiniteContainer('Remote Supply', Resource)
+    self.local_storage = Container('Local Storage', self.remote_supply)
+    self.satisfied = 0
+    self.misses = 0
+
+  def incr_satisfied(self):
+    log.info('Client got satisfied')
+    self.satisfied += 1
+
+  def incr_wait(self):
+    log.info('Client has to wait')
+    self.misses += 1
+
+  def reset(self):
+    self.satisfied = 0
+    self.misses = 0
+
+  def run(self):
+    """ The absolute Just-in-Time strategy basically tries to keep
+    local storage with only one item. Once it's consumed, ask for another.
+
+    This simulation is useless. Use the skeleton to build better simulations.
+    """
+    while True:
+      # Normal with mean=100, std_deviation=10
+      n_requested = int(random.normalvariate(1000, 100))
+
+      for i in range(n_requested):
+        try:
+          client = self.local_storage.pop()
+          self.incr_satisfied()
+        except MissException:
+          self.incr_wait()
+
+      print 'In one round, got %d misses, %d satisfied' % (self.misses, self.satisfied)
+      #self.reset()
+      time.sleep(0.1)
+
+
+def test_infinite_container(self):
   print 'Testing infinite supply'
   origin = InfiniteContainer('Supplier', Resource)
   c = Container('Local Storage', origin)
   assert isinstance(origin.pop(), Resource), 'Supplier is not generating the appropriate resources'
+
+if __name__ == '__main__':
+  log.basicConfig(level=log.INFO)
+
+  try:
+    AbsoluteJITStrategySimulation().run()
+  except KeyboardInterrupt:
+    print 'Exiting'
