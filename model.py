@@ -7,7 +7,11 @@ class Resource(object):
   def __init__(self, name=''):
     self.name = name
     self.created = datetime.datetime.now()
-    log.info('%s created at %s', name, str(self.created))
+    log.info('Resource created: %s', self)
+
+  def __str__(self):
+    return '<Resource name="%s" created="%s">' % (self.name, self.created)
+
 
 class MissException(Exception):
   """ A very glamorous exception.
@@ -22,7 +26,10 @@ class Container(list):
     super(Container, self).__init__()
     self.name = name
     self.parent = parent
-    log.info('%s created at %s', self, datetime.datetime.now())
+    log.info('Container created: %s', self)
+
+  def __str__(self):
+    return '<Container name="%s" items="%d">' % (self.name, len(self))
 
   def pop(self):
     """ Attempt to get a resource unity from this container or request
@@ -40,9 +47,12 @@ class Container(list):
     """
     if len(self) != 0:
       # We have available resources
-      return super(Container, self).pop()
+      item = super(Container, self).pop()
+      log.info('%s: pop()d one item (%s)', self, item)
+      return item
 
     # No available resources, retrieve it and signal a miss
+    log.info('%s: retrieving from parent', self)
     self.append(self.parent.pop())
     raise MissException()
 
@@ -53,11 +63,17 @@ class InfiniteContainer(Container):
     super(InfiniteContainer, self).__init__(name, None)
     self.item_class = item_class
 
-  def pop(self, index=0):
-    return self.item_class()
+  def __str__(self):
+    return '<InfiniteContainer name="%s" items="oo">' % (self.name)
+
+  def pop(self):
+    return self.item_class('item-%d' % len(self))
+
 
 if __name__ == '__main__':
+  log.basicConfig(level=log.INFO)
+
+  print 'Testing infinite supply'
   origin = InfiniteContainer('Supplier', Resource)
   c = Container('Local Storage', origin)
-
   assert isinstance(origin.pop(), Resource), 'Supplier is not generating the appropriate resources'
