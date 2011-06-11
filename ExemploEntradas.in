@@ -1,7 +1,7 @@
 [Entradas]
 pedido_minimo = 10.0
 tempo_de_entrega_reposicao = 5.0
-item_preco = 5.0
+item_preco = 10.0
 n_maquinas = 100.0
 
 custo_interrupcao_diario = 500

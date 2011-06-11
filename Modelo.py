@@ -37,24 +37,31 @@ class ParametrosSimulacao(object):
 class Simulador(object):
     def __init__(self, params):
         self.params = params
+        self.taxa_custo_oportunidade = math.pow(1 + params.custo_oportunidade_anual, 1.0/360.0) - 1
         self.gerador = geradorDistribuicaoWeibull(params.weibull_k, params.weibull_l)
         self.instantes_de_falhas = [int(math.floor(self.gerador())) for i in range(int(params.n_maquinas))]
         self.estoque = self.params.armazenamento_capacidade
         self.reposicoes = []
-        self.estoque_evolucao = []
+        self.saidas = {'estoque_evolucao': [],
+                       'custo_transporte': 0.0,
+                       'custo_estocagem': 0.0,
+                       'custo_oportunidade': 0.0}
 
     def simular(self):
         for dia in range(360):
             self.processar_reposicoes()
             self.processar_falhas(dia)
             self.processar_estoque()
-        return {'estoque_evolucao': self.estoque_evolucao}
+        return self.saidas
 
     def processar_reposicoes(self):
         espelho = []
         for i in range(len(self.reposicoes)):
             if self.reposicoes[i][0] == 1:
                 self.estoque += self.reposicoes[i][1]
+                self.saidas['custo_transporte'] += \
+                    (self.params.transporte_custo_base + \
+                     self.params.transporte_custo_unidade_extra * self.reposicoes[i][1])
             else:
                 espelho.append([self.reposicoes[i][0] - 1, self.reposicoes[i][1]])
         self.reposicoes = espelho
@@ -75,7 +82,9 @@ class Simulador(object):
             # Pedir apenas se alcançarmos o pedido mínimo
             if pedido >= self.params.pedido_minimo:
                 self.efetuar_pedido(pedido)
-        self.estoque_evolucao.append(self.estoque)
+        self.saidas['estoque_evolucao'].append(self.estoque)
+        self.saidas['custo_estocagem'] += self.estoque * self.params.armazenamento_custo_unitario
+        self.saidas['custo_oportunidade'] = (self.saidas['custo_oportunidade'] + self.estoque * self.params.item_preco) * self.taxa_custo_oportunidade
 
     def efetuar_pedido(self, quantidade):
         self.reposicoes.append([self.params.tempo_de_entrega_reposicao, quantidade])
