@@ -2,12 +2,13 @@
 pedido_minimo = 10.0
 tempo_de_entrega_reposicao = 5.0
 item_preco = 5.0
+n_maquinas = 100.0
 
 custo_interrupcao_diario = 500
 custo_oportunidade_anual = 0.12
 
 weibull_k = 1.0
-weibull_l = 0.5
+weibull_l = 20.0
 
 armazenamento_capacidade = 100.0
 armazenamento_custo_unitario = 0.02
