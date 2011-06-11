@@ -38,24 +38,47 @@ class Simulador(object):
     def __init__(self, params):
         self.params = params
         self.gerador = geradorDistribuicaoWeibull(params.weibull_k, params.weibull_l)
-        self.instantes_de_falhas = [math.floor(self.gerador()) for i in range(int(params.n_maquinas))]
-        print 'Falhas:', self.instantes_de_falhas
-        print 'Media:', media(self.instantes_de_falhas)
-        self.estoque = 0
+        self.instantes_de_falhas = [int(math.floor(self.gerador())) for i in range(int(params.n_maquinas))]
+        self.estoque = self.params.armazenamento_capacidade
         self.reposicoes = []
+        self.estoque_evolucao = []
 
     def simular(self):
         for dia in range(360):
             self.processar_reposicoes()
-        return []
+            self.processar_falhas(dia)
+            self.processar_estoque()
+        return {'estoque_evolucao': self.estoque_evolucao}
 
     def processar_reposicoes(self):
+        espelho = []
         for i in range(len(self.reposicoes)):
             if self.reposicoes[i][0] == 1:
-                repo = self.reposicoes.pop(i)
-                self.estoque += repo[1]
+                self.estoque += self.reposicoes[i][1]
             else:
-                self.reposicoes[i][0] -= 1
+                espelho.append([self.reposicoes[i][0] - 1, self.reposicoes[i][1]])
+        self.reposicoes = espelho
+
+    def processar_falhas(self, dia):
+        if dia in self.instantes_de_falhas:
+            # Indice da maquina falha
+            indice = self.instantes_de_falhas.index(dia)
+            # Calcular nova data de falha
+            self.instantes_de_falhas[indice] = int(math.floor(self.gerador()))
+
+    def processar_estoque(self):
+        delta = self.estoque - self.params.armazenamento_capacidade
+        if delta < 0:
+            # Abaixo do máximo
+            pedido = abs(delta)
+
+            # Pedir apenas se alcançarmos o pedido mínimo
+            if pedido >= self.params.pedido_minimo:
+                self.efetuar_pedido(pedido)
+        self.estoque_evolucao.append(self.estoque)
+
+    def efetuar_pedido(self, quantidade):
+        self.reposicoes.append([self.params.tempo_de_entrega_reposicao, quantidade])
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
