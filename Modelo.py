@@ -186,3 +186,12 @@ if __name__ == '__main__':
     print saidas
     print 'Min(evolucao):\t', min(saidas['estoque_evolucao'])
     print 'Tempo de simulação:\t', sim.Ndias, 'dias'
+
+    total = 0.0
+    print 'Custos Mensais:'
+    for custo in [k for k in saidas.keys() if k.startswith('custo')]:
+        print '\t%s: %.5f' % (custo.replace('_', ' ').capitalize(), saidas[custo])
+        total += saidas[custo]
+
+    print '\tTotal: %.5f' % total
+
