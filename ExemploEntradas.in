@@ -10,7 +10,7 @@ custo_oportunidade_anual = 0.12
 weibull_k = 1.0
 weibull_l = 20.0
 
-armazenamento_capacidade = 50.0
+armazenamento_capacidade = 100.0
 armazenamento_custo_unitario = 0.02
 
 transporte_custo_base = 50.0

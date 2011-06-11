@@ -15,6 +15,9 @@ def geradorDistribuicaoWeibull(l, k):
 def media(vetor):
     return sum(vetor)/len(vetor)
 
+def WeibullEsperanca(k, l):
+    return l * math.gamma(1 + 1.0/k)
+
 
 class ParametrosSimulacao(object):
 
@@ -47,6 +50,7 @@ class Equipamento(object):
 class Simulador(object):
     def __init__(self, params):
         self.params = params
+        self.Ndias = int(11*WeibullEsperanca(params.weibull_k, params.weibull_l))
         self.taxa_custo_oportunidade = math.pow(1 + params.custo_oportunidade_anual, 1.0/360.0) - 1
         self.equipamentos = [Equipamento(params) for i in range(int(self.params.items_operacao))]
         self.estoque = self.params.armazenamento_capacidade
@@ -57,12 +61,28 @@ class Simulador(object):
                        'custo_oportunidade': 0.0,
                        'custo_parada': 0.0}
 
+    def normaliza(self, saidas):
+        fator = 30/float(self.Ndias - self.Ndias/11)
+        for k in saidas:
+            if k.startswith('custo_'):
+                saidas[k] *= fator
+        return saidas
+
+    def resetar(self):
+        self.saidas = {'estoque_evolucao': [],
+                       'custo_transporte': 0.0,
+                       'custo_estocagem': 0.0,
+                       'custo_oportunidade': 0.0,
+                       'custo_parada': 0.0}
+
     def simular(self):
-        for dia in range(360):
+        for dia in range(self.Ndias):
+            if dia == self.Ndias/11:
+                self.resetar()
             self.processar_reposicoes()
             self.processar_falhas(dia)
             self.processar_estoque()
-        return self.saidas
+        return self.normaliza(self.saidas)
 
     def processar_reposicoes(self):
         espelho = []
@@ -134,3 +154,5 @@ if __name__ == '__main__':
     print 'Simulação: ' + str(params)
     saidas = sim.simular()
     print saidas
+    print 'Min(evolucao):\t', min(saidas['estoque_evolucao'])
+    print 'Tempo de simulação:\t', sim.Ndias, 'dias'
