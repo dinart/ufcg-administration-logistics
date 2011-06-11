@@ -34,18 +34,28 @@ class ParametrosSimulacao(object):
         return self.attrs.get(k, None)
 
 
+class Equipamento(object):
+    def __init__(self, params):
+        # Gerar automaticamente
+        self.operando = True
+        self.gerador = geradorDistribuicaoWeibull(params.weibull_k, params.weibull_l)
+        self.falha_em = int(math.floor(self.gerador()))
+
+    def recalcular_data_falha(self, dia_atual):
+        self.falha_em = dia_atual + int(math.floor(self.gerador()))
+
 class Simulador(object):
     def __init__(self, params):
         self.params = params
         self.taxa_custo_oportunidade = math.pow(1 + params.custo_oportunidade_anual, 1.0/360.0) - 1
-        self.gerador = geradorDistribuicaoWeibull(params.weibull_k, params.weibull_l)
-        self.instantes_de_falhas = [int(math.floor(self.gerador())) for i in range(int(params.n_maquinas))]
+        self.equipamentos = [Equipamento(params) for i in range(int(self.params.items_operacao))]
         self.estoque = self.params.armazenamento_capacidade
         self.reposicoes = []
         self.saidas = {'estoque_evolucao': [],
                        'custo_transporte': 0.0,
                        'custo_estocagem': 0.0,
-                       'custo_oportunidade': 0.0}
+                       'custo_oportunidade': 0.0,
+                       'custo_parada': 0.0}
 
     def simular(self):
         for dia in range(360):
@@ -67,11 +77,27 @@ class Simulador(object):
         self.reposicoes = espelho
 
     def processar_falhas(self, dia):
-        if dia in self.instantes_de_falhas:
-            # Indice da maquina falha
-            indice = self.instantes_de_falhas.index(dia)
-            # Calcular nova data de falha
-            self.instantes_de_falhas[indice] = int(math.floor(self.gerador()))
+        for eq in self.equipamentos:
+            if not eq.operando:
+                if self.estoque > 0:
+                    # Voltar a operar
+                    self.estoque -= 1
+                    eq.operando = True
+                    eq.recalcular_data_falha(dia)
+                else:
+                    self.saidas['custo_parada'] += self.params.custo_interrupcao_diario
+
+            if eq.falha_em == dia:
+                if self.estoque > 0:
+                    # Substituir do estoque
+                    self.estoque -= 1
+
+                    # Calcular nova data de falha
+                    eq.recalcular_data_falha(dia)
+                else:
+                    # Nao há para reposição, mantém no vetor
+                    eq.operando = False
+                    self.saidas['custo_parada'] += self.params.custo_interrupcao_diario
 
     def processar_estoque(self):
         delta = self.estoque - self.params.armazenamento_capacidade
@@ -79,8 +105,14 @@ class Simulador(object):
             # Abaixo do máximo
             pedido = abs(delta)
 
-            # Pedir apenas se alcançarmos o pedido mínimo
-            if pedido >= self.params.pedido_minimo:
+            # Calcular quanto já está por vir
+            total = 0
+            for p in self.reposicoes:
+                total += p[1]
+
+            # Pedir apenas se alcançarmos o pedido mínimo e já não há pedidos
+            if self.estoque + total < self.params.armazenamento_capacidade and \
+                pedido >= self.params.pedido_minimo:
                 self.efetuar_pedido(pedido)
         self.saidas['estoque_evolucao'].append(self.estoque)
         self.saidas['custo_estocagem'] += self.estoque * self.params.armazenamento_custo_unitario
@@ -99,5 +131,6 @@ if __name__ == '__main__':
     c.read([sys.argv[1]])
     params = ParametrosSimulacao.fromConfig(c)
     sim = Simulador(params)
+    print 'Simulação: ' + str(params)
     saidas = sim.simular()
     print saidas
