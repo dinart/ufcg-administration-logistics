@@ -1,6 +1,17 @@
 Determinação dos Custos Logísticos de Estocagem a partir de Simulação Computacional
 ===================================================================================
 
+Executando o Simulador
+----------------------
+Para executar o simulador, faça:
+
+  python Modelo.py Entrada.in
+
+O arquivo Entrada.in é um arquivo que contém as especificações da simulação.
+Para simplificar, acompanha este código um exemplo de entrada chamado
+ExemploEntradas.in.
+
+
 Gerar Piechart dos Custos Logísticos
 ------------------------------------
 Utilizar a função piechart.m feita para o octave. Para utilizá-la, basta estar
