@@ -37,16 +37,36 @@ import random
 import ConfigParser
 
 
-def geradorDistribuicaoWeibull(l, k):
-    def gerador():
-        return random.weibullvariate(k, l)
-    return gerador
+class DistribuicaoWeibull(object):
+
+    def __init__(self, l, k):
+        """ Classe utilitária para lidar com a distribuição de Weibull.
+        É definida por dois valores, l (formato) e escala 'k'.
+        """
+        self.l = l
+        self.k = k
+
+    def __call__(self):
+        """ Gera um valor da distribuição.
+        """
+        return random.weibullvariate(self.k, self.l)
+
+    def esperanca(self):
+        """ Calcula o valor da esperança da distribuição de Weibull.
+        """
+        return self.l * math.gamma(1 + 1.0/self.k)
+
 
 def media(vetor):
+    """ Retorna o valor médio do vetor.
+    """
     return sum(vetor)/len(vetor)
 
-def WeibullEsperanca(k, l):
-    return l * math.gamma(1 + 1.0/k)
+def desvio_padrao(vetor):
+    """ Retorna o desvio padrão amostral do vetor.
+    """
+    m = media(vetor)
+    return math.sqrt((1.0/(len(vetor) - 1)) * sum([math.pow(v - m, 2) for v in vetor]))
 
 
 class ParametrosSimulacao(object):
@@ -71,7 +91,7 @@ class Equipamento(object):
     def __init__(self, params):
         # Gerar automaticamente
         self.operando = True
-        self.gerador = geradorDistribuicaoWeibull(params.weibull_k, params.weibull_l)
+        self.gerador = DistribuicaoWeibull(params.weibull_k, params.weibull_l)
         self.falha_em = int(math.floor(self.gerador()))
 
     def recalcular_data_falha(self, dia_atual):
@@ -80,8 +100,9 @@ class Equipamento(object):
 class Simulador(object):
     def __init__(self, params):
         self.params = params
-        self.Ndias = int(11*WeibullEsperanca(params.weibull_k, params.weibull_l))
+        self.Ndias = int(11*DistribuicaoWeibull(params.weibull_l, params.weibull_k).esperanca())
         self.taxa_custo_oportunidade = math.pow(1 + params.custo_oportunidade_anual, 1.0/360.0) - 1
+        print 'Taxa de custo de oportunidade:', self.taxa_custo_oportunidade
         self.equipamentos = [Equipamento(params) for i in range(int(self.params.items_operacao))]
         self.estoque = self.params.armazenamento_capacidade
         self.reposicoes = []
@@ -181,12 +202,19 @@ if __name__ == '__main__':
     c.read([sys.argv[1]])
     params = ParametrosSimulacao.fromConfig(c)
     sim = Simulador(params)
-    print 'Simulação: ' + str(params)
     saidas = sim.simular()
-    print saidas
-    print 'Min(evolucao):\t', min(saidas['estoque_evolucao'])
-    print 'Tempo de simulação:\t', sim.Ndias, 'dias'
 
+    print 'Simulação'
+    for p, v in params.attrs.items():
+      print '\t%s:\t%2.2f' % (p.replace('_', ' ').capitalize(), v)
+    print '\tTempo de simulação:', (sim.Ndias - sim.Ndias/11), 'dias'
+    print
+    print 'Estoque'
+    print '\tMenor número de ítens estocados:', min(saidas['estoque_evolucao'])
+    print '\tMédia:', media(saidas['estoque_evolucao'])
+    print '\tDesvio padrão:', desvio_padrao(saidas['estoque_evolucao'])
+    print '\tEvolução:', saidas['estoque_evolucao']
+    print
     total = 0.0
     print 'Custos Mensais:'
     for custo in [k for k in saidas.keys() if k.startswith('custo')]:
@@ -194,4 +222,3 @@ if __name__ == '__main__':
         total += saidas[custo]
 
     print '\tTotal: %.5f' % total
-
