@@ -101,7 +101,7 @@ class Equipamento(object):
 class Simulador(object):
     def __init__(self, params):
         self.params = params
-        self.periodos = 1000.0
+        self.periodos = 100
         self.Ndias = int(self.periodos * DistribuicaoWeibull(params.weibull_l, params.weibull_k).esperanca())
         self.taxa_custo_oportunidade = math.pow(1 + params.custo_oportunidade_anual, 1.0/360.0) - 1
         self.equipamentos = [Equipamento(params) for i in range(int(self.params.items_operacao))]
@@ -230,4 +230,6 @@ if __name__ == '__main__':
 
     print '\tTotal: %.3f R$/mês' % total
 
-    print 'Numero de falhas:', sim.nfalhas
+    print 'Relatório de Falhas'
+    print '\tNumero de falhas:', sim.nfalhas, 'falhas'
+    print '\tNumero de falhas:', sim.nfalhas/sim.Ndias, 'falhas/dia'
