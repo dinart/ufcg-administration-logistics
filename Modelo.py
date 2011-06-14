@@ -100,7 +100,8 @@ class Equipamento(object):
 class Simulador(object):
     def __init__(self, params):
         self.params = params
-        self.Ndias = int(11*DistribuicaoWeibull(params.weibull_l, params.weibull_k).esperanca())
+        self.periodos = 1000.0
+        self.Ndias = int(self.periodos * DistribuicaoWeibull(params.weibull_l, params.weibull_k).esperanca())
         self.taxa_custo_oportunidade = math.pow(1 + params.custo_oportunidade_anual, 1.0/360.0) - 1
         print 'Taxa de custo de oportunidade:', self.taxa_custo_oportunidade
         self.equipamentos = [Equipamento(params) for i in range(int(self.params.items_operacao))]
@@ -113,10 +114,12 @@ class Simulador(object):
                        'custo_parada': 0.0}
 
     def normaliza(self, saidas):
-        fator = 30/float(self.Ndias - self.Ndias/11)
+        fator = 30/float(self.Ndias - self.Ndias/self.periodos)
         for k in saidas:
             if k.startswith('custo_'):
                 saidas[k] *= fator
+
+        saidas['estoque_evolucao'] = [int(k) for k in saidas['estoque_evolucao'][:]]
         return saidas
 
     def resetar(self):
@@ -128,7 +131,7 @@ class Simulador(object):
 
     def simular(self):
         for dia in range(self.Ndias):
-            if dia == self.Ndias/11:
+            if dia == self.Ndias/self.periodos:
                 self.resetar()
             self.processar_reposicoes()
             self.processar_falhas(dia)
@@ -185,9 +188,10 @@ class Simulador(object):
             if self.estoque + total < self.params.armazenamento_capacidade and \
                 pedido >= self.params.pedido_minimo:
                 self.efetuar_pedido(pedido)
+
         self.saidas['estoque_evolucao'].append(self.estoque)
         self.saidas['custo_estocagem'] += self.estoque * self.params.armazenamento_custo_unitario
-        self.saidas['custo_oportunidade'] = (self.saidas['custo_oportunidade'] + self.estoque * self.params.item_preco) * self.taxa_custo_oportunidade
+        self.saidas['custo_oportunidade'] = self.saidas['custo_oportunidade'] + (self.saidas['custo_oportunidade'] + self.estoque * self.params.item_preco) * self.taxa_custo_oportunidade
 
     def efetuar_pedido(self, quantidade):
         self.reposicoes.append([self.params.tempo_de_entrega_reposicao, quantidade])
@@ -207,18 +211,19 @@ if __name__ == '__main__':
     print 'Simulação'
     for p, v in params.attrs.items():
       print '\t%s:\t%2.2f' % (p.replace('_', ' ').capitalize(), v)
-    print '\tTempo de simulação:', (sim.Ndias - sim.Ndias/11), 'dias'
+    print '\tTempo de simulação:', (sim.Ndias - sim.Ndias/sim.periodos), 'dias'
     print
     print 'Estoque'
-    print '\tMenor número de ítens estocados:', min(saidas['estoque_evolucao'])
-    print '\tMédia:', media(saidas['estoque_evolucao'])
+    print '\tCapacidade:', int(params.armazenamento_capacidade), 'itens'
+    print '\tMenor número registrado de ítens estocados:', int(min(saidas['estoque_evolucao'])), 'itens'
+    print '\tMédia:', media(saidas['estoque_evolucao']), 'itens'
     print '\tDesvio padrão:', desvio_padrao(saidas['estoque_evolucao'])
-    print '\tEvolução:', saidas['estoque_evolucao']
+    print '\tEvolução:', saidas['estoque_evolucao'] , 'itens/dia'
     print
     total = 0.0
     print 'Custos Mensais:'
     for custo in [k for k in saidas.keys() if k.startswith('custo')]:
-        print '\t%s: %.5f' % (custo.replace('_', ' ').capitalize(), saidas[custo])
+        print '\t%s: %.3f R$/mês' % (custo.replace('_', ' ').capitalize(), saidas[custo])
         total += saidas[custo]
 
-    print '\tTotal: %.5f' % total
+    print '\tTotal: %.3f R$/mês' % total

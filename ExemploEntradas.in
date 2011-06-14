@@ -1,17 +1,17 @@
 [Entradas]
 pedido_minimo = 10.0
 tempo_de_entrega_reposicao = 5.0
-item_preco = 10.0
+item_preco = 15.0
 items_operacao = 100.0
 
-custo_interrupcao_diario = 500
+custo_interrupcao_diario = 250
 custo_oportunidade_anual = 0.12
 
-weibull_k = 1.0
+weibull_k = 1.5
 weibull_l = 20.0
 
-armazenamento_capacidade = 100.0
-armazenamento_custo_unitario = 0.02
+armazenamento_capacidade = 35.0
+armazenamento_custo_unitario = 0.05
 
-transporte_custo_base = 50.0
+transporte_custo_base = 15.0
 transporte_custo_unidade_extra = 0.10
