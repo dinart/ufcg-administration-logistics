@@ -95,7 +95,8 @@ class Equipamento(object):
         self.falha_em = int(math.floor(self.gerador()))
 
     def recalcular_data_falha(self, dia_atual):
-        self.falha_em = dia_atual + int(math.floor(self.gerador()))
+        while self.falha_em <= dia_atual:
+            self.falha_em = dia_atual + int(math.floor(self.gerador()))
 
 class Simulador(object):
     def __init__(self, params):
@@ -103,7 +104,6 @@ class Simulador(object):
         self.periodos = 1000.0
         self.Ndias = int(self.periodos * DistribuicaoWeibull(params.weibull_l, params.weibull_k).esperanca())
         self.taxa_custo_oportunidade = math.pow(1 + params.custo_oportunidade_anual, 1.0/360.0) - 1
-        print 'Taxa de custo de oportunidade:', self.taxa_custo_oportunidade
         self.equipamentos = [Equipamento(params) for i in range(int(self.params.items_operacao))]
         self.estoque = self.params.armazenamento_capacidade
         self.reposicoes = []
@@ -112,9 +112,10 @@ class Simulador(object):
                        'custo_estocagem': 0.0,
                        'custo_oportunidade': 0.0,
                        'custo_parada': 0.0}
+        self.nfalhas = 0
 
     def normaliza(self, saidas):
-        fator = 30/float(self.Ndias - self.Ndias/self.periodos)
+        fator = 30/float(self.Ndias*(1 - 1/self.periodos))
         for k in saidas:
             if k.startswith('custo_'):
                 saidas[k] *= fator
@@ -172,6 +173,7 @@ class Simulador(object):
                     # Nao há para reposição, mantém no vetor
                     eq.operando = False
                     self.saidas['custo_parada'] += self.params.custo_interrupcao_diario
+                self.nfalhas += 1
 
     def processar_estoque(self):
         delta = self.estoque - self.params.armazenamento_capacidade
@@ -218,7 +220,7 @@ if __name__ == '__main__':
     print '\tMenor número registrado de ítens estocados:', int(min(saidas['estoque_evolucao'])), 'itens'
     print '\tMédia:', media(saidas['estoque_evolucao']), 'itens'
     print '\tDesvio padrão:', desvio_padrao(saidas['estoque_evolucao'])
-    print '\tEvolução:', saidas['estoque_evolucao'] , 'itens/dia'
+    print '\tEvolução:', saidas['estoque_evolucao'][:100] , 'itens/dia'
     print
     total = 0.0
     print 'Custos Mensais:'
@@ -227,3 +229,5 @@ if __name__ == '__main__':
         total += saidas[custo]
 
     print '\tTotal: %.3f R$/mês' % total
+
+    print 'Numero de falhas:', sim.nfalhas
