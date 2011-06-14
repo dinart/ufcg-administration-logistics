@@ -187,7 +187,7 @@ class Simulador(object):
                 total += p[1]
 
             # Pedir apenas se alcançarmos o pedido mínimo e já não há pedidos
-            if self.estoque + total < self.params.armazenamento_capacidade and \
+            if self.estoque + total + pedido <= self.params.armazenamento_capacidade and \
                 pedido >= self.params.pedido_minimo:
                 self.efetuar_pedido(pedido)
 
@@ -213,7 +213,7 @@ if __name__ == '__main__':
     print 'Simulação'
     for p, v in params.attrs.items():
       print '\t%s:\t%2.2f' % (p.replace('_', ' ').capitalize(), v)
-    print '\tTempo de simulação:', (sim.Ndias - sim.Ndias/sim.periodos), 'dias'
+    print '\tTempo de simulação:', int(sim.Ndias - sim.Ndias/sim.periodos), 'dias'
     print
     print 'Estoque'
     print '\tCapacidade:', int(params.armazenamento_capacidade), 'itens'
