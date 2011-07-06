@@ -1,17 +1,17 @@
 [Entradas]
-pedido_minimo = 15.0
+pedido_minimo = 150.0
 tempo_de_entrega_reposicao = 7.0
-item_preco = 100.00
-items_operacao = 40.0
+item_preco = 2.00
+items_operacao = 1000.0
 
-custo_interrupcao_diario = 300.00
+custo_interrupcao_diario = 10.00
 custo_oportunidade_anual = 0.10
 
-weibull_k = 5.0
-weibull_l = 30.0
+weibull_k = 4.0
+weibull_l = 3.0
 
 armazenamento_capacidade = 100.0
 armazenamento_custo_unitario = 0.5
 
-transporte_custo_base = 50.0
-transporte_custo_unidade_extra = 3.0
+transporte_custo_base = 40.0
+transporte_custo_unidade_extra = 1.0

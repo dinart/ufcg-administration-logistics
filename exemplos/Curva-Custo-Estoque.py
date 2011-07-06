@@ -10,10 +10,11 @@ if __name__ == '__main__':
 
     a = int(float(sys.argv[1]))
     b = int(float(sys.argv[2]))
+    pts = int(float(sys.argv[3]))
 
     custos = []
     capacidade = []
-    for i in range(a, b, int(math.ceil((a+b)/100.0))):
+    for i in range(a, b, int(math.ceil((b-a)/pts))):
       params.armazenamento_capacidade = i
       saidas = Simulador(params).simular()
 
